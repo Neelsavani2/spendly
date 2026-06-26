@@ -1,7 +1,10 @@
-from flask import Flask, render_template
-from database.db import get_db, init_db, seed_db
+import os
+
+from flask import Flask, render_template, request, session, redirect, url_for
+from database.db import get_db, init_db, seed_db, create_user, find_user_by_email
 
 app = Flask(__name__)
+app.secret_key = os.environ.get("SECRET_KEY", "dev-secret-change-in-prod")
 
 
 # ------------------------------------------------------------------ #
@@ -13,9 +16,27 @@ def landing():
     return render_template("landing.html")
 
 
-@app.route("/register")
+@app.route("/register", methods=["GET", "POST"])
 def register():
-    return render_template("register.html")
+    if request.method == "GET":
+        return render_template("register.html")
+
+    name     = request.form.get("name",     "").strip()
+    email    = request.form.get("email",    "").strip().lower()
+    password = request.form.get("password", "").strip()
+
+    if not name:
+        return render_template("register.html", error="Name is required.", email=email)
+    if not email:
+        return render_template("register.html", error="Email is required.", name=name)
+    if len(password) < 8:
+        return render_template("register.html", error="Password must be at least 8 characters.", name=name, email=email)
+    if find_user_by_email(email):
+        return render_template("register.html", error="An account with that email already exists.", name=name, email=email)
+
+    user = create_user(name, email, password)
+    session["user_id"] = user["id"]
+    return redirect(url_for("dashboard"))
 
 
 @app.route("/login")
@@ -36,6 +57,11 @@ def privacy():
 # ------------------------------------------------------------------ #
 # Placeholder routes — students will implement these                  #
 # ------------------------------------------------------------------ #
+
+@app.route("/dashboard")
+def dashboard():
+    return "Dashboard — coming in Step 5"
+
 
 @app.route("/logout")
 def logout():
