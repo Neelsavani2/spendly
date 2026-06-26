@@ -21,6 +21,8 @@ def test_register_success(client):
 
 def test_register_duplicate_email(client):
     _register(client)
+    with client.session_transaction() as sess:
+        sess.clear()
     response = _register(client, name="Other User")
     assert response.status_code == 200
     assert b"already exists" in response.data

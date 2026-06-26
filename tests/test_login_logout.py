@@ -30,6 +30,8 @@ def test_login_success(client):
 
 def test_login_wrong_password(client):
     _register(client)
+    with client.session_transaction() as sess:
+        sess.clear()
     response = _login(client, password="wrongpassword")
     assert response.status_code == 200
     assert b"Invalid email or password" in response.data
