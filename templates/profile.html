@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+
+{% block title %}Profile — Spendly{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/profile.css') }}">
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="profile-page">
+
+  <!-- Section 1: User info card -->
+  <div class="profile-user-card">
+    <div class="profile-avatar" aria-hidden="true">PM</div>
+    <div class="profile-user-info">
+      <h1 class="profile-user-name">{{ user.name }}</h1>
+      <p class="profile-user-email">{{ user.email }}</p>
+      <p class="profile-user-meta">
+        <i data-lucide="calendar" class="profile-icon-inline"></i>
+        Member since {{ user.member_since }}
+      </p>
+    </div>
+    <div class="profile-user-actions">
+      <a href="{{ url_for('dashboard') }}" class="btn-primary">Go to Dashboard</a>
+    </div>
+  </div>
+
+  <!-- Section 2: Summary stats row -->
+  <div class="profile-stats-row">
+    <div class="profile-stat-card">
+      <div class="profile-stat-icon"><i data-lucide="wallet"></i></div>
+      <p class="profile-stat-label">Total spent</p>
+      <p class="profile-stat-value">{{ stats.total_spent }}</p>
+    </div>
+    <div class="profile-stat-card">
+      <div class="profile-stat-icon"><i data-lucide="calendar"></i></div>
+      <p class="profile-stat-label">This month</p>
+      <p class="profile-stat-value">{{ stats.this_month }}</p>
+    </div>
+    <div class="profile-stat-card">
+      <div class="profile-stat-icon"><i data-lucide="receipt"></i></div>
+      <p class="profile-stat-label">Transactions</p>
+      <p class="profile-stat-value">{{ stats.transactions }}</p>
+    </div>
+    <div class="profile-stat-card">
+      <div class="profile-stat-icon"><i data-lucide="tag"></i></div>
+      <p class="profile-stat-label">Top category</p>
+      <p class="profile-stat-value">{{ stats.top_category }}</p>
+    </div>
+  </div>
+
+  <!-- Section 3: Transaction history table -->
+  <div class="profile-section">
+    <div class="profile-section-header">
+      <i data-lucide="clock" class="profile-section-icon"></i>
+      <h2 class="profile-section-title">Recent transactions</h2>
+    </div>
+    <div class="profile-table-wrap">
+      <table class="profile-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Description</th>
+            <th>Category</th>
+            <th class="profile-col-right">Amount</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for tx in transactions %}
+          <tr>
+            <td class="profile-col-date">{{ tx.date }}</td>
+            <td>{{ tx.description }}</td>
+            <td>
+              <span class="profile-badge profile-badge--{{ tx.category | lower }}">
+                {{ tx.category }}
+              </span>
+            </td>
+            <td class="profile-amount profile-col-right">{{ tx.amount }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Section 4: Category breakdown -->
+  <div class="profile-section">
+    <div class="profile-section-header">
+      <i data-lucide="pie-chart" class="profile-section-icon"></i>
+      <h2 class="profile-section-title">Category breakdown</h2>
+    </div>
+    <ul class="profile-categories" role="list">
+      {% for cat in categories %}
+      <li class="profile-cat-row">
+        <span class="profile-cat-label">{{ cat.name }}</span>
+        <div class="profile-bar-track"
+             role="progressbar"
+             aria-valuenow="{{ cat.percent }}"
+             aria-valuemin="0"
+             aria-valuemax="100">
+          <div class="profile-bar-fill profile-bar--{{ cat.name | lower }}"
+               style="--bar-width: {{ cat.percent }}%"></div>
+        </div>
+        <span class="profile-cat-meta">
+          <span class="profile-cat-amount">{{ cat.amount }}</span>
+          <span class="profile-cat-percent">{{ cat.percent }}%</span>
+        </span>
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>lucide.createIcons();</script>
+{% endblock %}
