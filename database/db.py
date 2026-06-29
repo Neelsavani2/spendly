@@ -117,17 +117,74 @@ def create_user(name, email, password):
 
 # --- SECTION: transactions helper (Subagent 1) ---
 def get_recent_transactions(user_id, limit=5):
-    pass  # TODO: implement
+    conn = get_db()
+    rows = conn.execute(
+        "SELECT date, description, category, amount FROM expenses "
+        "WHERE user_id = ? ORDER BY date DESC, id DESC LIMIT ?",
+        (user_id, limit)
+    ).fetchall()
+    conn.close()
+    result = []
+    for r in rows:
+        dt = datetime.strptime(r["date"], "%Y-%m-%d")
+        result.append({
+            "date": f"{dt.day} {dt.strftime('%b %Y')}",
+            "description": r["description"] or "",
+            "category": r["category"],
+            "amount": f"₹{r['amount']:,.0f}",
+        })
+    return result
 # --- END SECTION: transactions helper ---
 
 
 # --- SECTION: stats helper (Subagent 2) ---
 def get_profile_stats(user_id):
-    pass  # TODO: implement
+    conn = get_db()
+    total = conn.execute(
+        "SELECT COALESCE(SUM(amount), 0) FROM expenses WHERE user_id = ?",
+        (user_id,)
+    ).fetchone()[0]
+    this_month = conn.execute(
+        "SELECT COALESCE(SUM(amount), 0) FROM expenses "
+        "WHERE user_id = ? AND strftime('%Y-%m', date) = strftime('%Y-%m', 'now')",
+        (user_id,)
+    ).fetchone()[0]
+    count = conn.execute(
+        "SELECT COUNT(*) FROM expenses WHERE user_id = ?",
+        (user_id,)
+    ).fetchone()[0]
+    top_row = conn.execute(
+        "SELECT category FROM expenses WHERE user_id = ? "
+        "GROUP BY category ORDER BY SUM(amount) DESC LIMIT 1",
+        (user_id,)
+    ).fetchone()
+    conn.close()
+    return {
+        "total_spent":  f"₹{total:,.0f}",
+        "this_month":   f"₹{this_month:,.0f}",
+        "transactions": count,
+        "top_category": top_row["category"] if top_row else "—",
+    }
 # --- END SECTION: stats helper ---
 
 
 # --- SECTION: categories helper (Subagent 3) ---
 def get_category_breakdown(user_id):
-    pass  # TODO: implement
+    conn = get_db()
+    rows = conn.execute(
+        "SELECT category, SUM(amount) AS total FROM expenses "
+        "WHERE user_id = ? GROUP BY category ORDER BY total DESC",
+        (user_id,)
+    ).fetchall()
+    conn.close()
+    grand_total = sum(r["total"] for r in rows)
+    result = []
+    for r in rows:
+        pct = round(r["total"] / grand_total * 100) if grand_total else 0
+        result.append({
+            "name":    r["category"],
+            "amount":  f"₹{r['total']:,.0f}",
+            "percent": pct,
+        })
+    return result
 # --- END SECTION: categories helper ---
