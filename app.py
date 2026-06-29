@@ -1,7 +1,12 @@
 import os
+from datetime import datetime
 
 from flask import Flask, render_template, request, session, redirect, url_for
-from database.db import get_db, init_db, seed_db, create_user, find_user_by_email, verify_user, find_user_by_id
+from database.db import (
+    get_db, init_db, seed_db,
+    create_user, find_user_by_email, verify_user, find_user_by_id,
+    get_profile_stats, get_recent_transactions, get_category_breakdown,
+)
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "dev-secret-change-in-prod")
@@ -97,31 +102,27 @@ def profile():
     if not session.get("user_id"):
         return redirect(url_for("login"))
 
+    user_id = session["user_id"]
+
+    # --- SECTION: user + stats (Subagent 2) ---
+    raw_user = find_user_by_id(user_id)
+    dt = datetime.strptime(raw_user["created_at"], "%Y-%m-%d %H:%M:%S")
     user = {
-        "name":         "Priya Mehta",
-        "email":        "priya.mehta@gmail.com",
-        "member_since": "March 2024",
+        "name":         raw_user["name"],
+        "email":        raw_user["email"],
+        "member_since": dt.strftime("%B %Y"),
     }
-    stats = {
-        "total_spent":  "₹24,850",
-        "this_month":   "₹6,320",
-        "transactions": 47,
-        "top_category": "Food",
-    }
-    transactions = [
-        {"date": "28 Jun 2026", "description": "Grocery run at D-Mart",  "category": "Food",          "amount": "₹1,240"},
-        {"date": "26 Jun 2026", "description": "BESCOM electricity bill", "category": "Bills",         "amount": "₹2,150"},
-        {"date": "24 Jun 2026", "description": "Ola cab to office",       "category": "Transport",     "amount": "₹380"},
-        {"date": "22 Jun 2026", "description": "Apollo pharmacy",         "category": "Health",        "amount": "₹540"},
-        {"date": "20 Jun 2026", "description": "Netflix subscription",    "category": "Entertainment", "amount": "₹649"},
-    ]
-    categories = [
-        {"name": "Food",          "amount": "₹8,420", "percent": 34},
-        {"name": "Bills",         "amount": "₹6,150", "percent": 25},
-        {"name": "Transport",     "amount": "₹3,720", "percent": 15},
-        {"name": "Health",        "amount": "₹3,215", "percent": 13},
-        {"name": "Entertainment", "amount": "₹3,345", "percent": 13},
-    ]
+    stats = get_profile_stats(user_id)
+    # --- END SECTION: user + stats ---
+
+    # --- SECTION: transactions (Subagent 1) ---
+    transactions = get_recent_transactions(user_id)
+    # --- END SECTION: transactions ---
+
+    # --- SECTION: categories (Subagent 3) ---
+    categories = get_category_breakdown(user_id)
+    # --- END SECTION: categories ---
+
     return render_template(
         "profile.html",
         user=user,
