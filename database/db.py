@@ -1,5 +1,6 @@
 import sqlite3
 import os
+from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -112,3 +113,21 @@ def create_user(name, email, password):
     ).fetchone()
     conn.close()
     return user
+
+
+# --- SECTION: transactions helper (Subagent 1) ---
+def get_recent_transactions(user_id, limit=5):
+    pass  # TODO: implement
+# --- END SECTION: transactions helper ---
+
+
+# --- SECTION: stats helper (Subagent 2) ---
+def get_profile_stats(user_id):
+    pass  # TODO: implement
+# --- END SECTION: stats helper ---
+
+
+# --- SECTION: categories helper (Subagent 3) ---
+def get_category_breakdown(user_id):
+    pass  # TODO: implement
+# --- END SECTION: categories helper ---
